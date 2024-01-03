@@ -351,8 +351,12 @@ with col1:
     if option == 'Add Undead to Existing Hoard':
         add_undead(st.session_state['undead_hoard'])
 
+    # if option == 'Attack':
+
+
     if option == 'Display Army':
         if 'undead_hoard' in st.session_state:
-            
-            army = st.session_state['undead_hoard']['Skeleton']
-            army.display_army_health()
+            undead_hoard = st.session_state['undead_hoard']
+            if 'Skeleton' in undead_hoard:
+                army = undead_hoard['Skeleton']
+                army.display_army_health()
