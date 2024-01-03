@@ -1,2 +1,47 @@
 - add gpt descriptions for attacks/ hits 
+- 
+- read undead stats from csv
 - generalize stat blocks where gpt can get stat block for any summoned undead
+- display images for member of the army 
+- include undo button
+- time alive for skeletons
+- save current army to csv
+- upload csv 
+
+- add different fonts for hits/misses 
+- create 'last action' class variable so 'miss' or 'fail' can be displayed next to each undead
+- create hit rate class variable 
+- have separate file that includes all 
+
+#####################################################
+from io import StringIO
+
+# Example DataFrame
+df = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
+
+# Convert DataFrame to CSV
+csv = df.to_csv(index=False)
+csv_file = StringIO(csv)
+csv_file.name = 'dataframe.csv'
+
+# Streamlit download button
+st.download_button(
+    label="Download data as CSV",
+    data=csv_file,
+    file_name='dataframe.csv',
+    mime='text/csv',
+)
+
+
+
+import streamlit as st
+
+# Dropdown menu
+option = st.selectbox('Choose an option', ['Option 1', 'Option 2', 'Other'])
+
+# Check if the user selects 'Other'
+if option == 'Other':
+    # Textbox for user to write their option
+    other_option = st.text_input('Please specify the other option')
+    if other_option:
+        st.write('You have entered:', other_option)

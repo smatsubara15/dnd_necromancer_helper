@@ -87,7 +87,6 @@ class SkeletonArmy:
         for _ in range(count):
             new_skeleton = Skeleton(self.max_health, self.attack_bonus, self.dex_bonus)
             self.skeletons.append(new_skeleton)
-            print(new_skeleton.display_health())
         print(f"Total number of skeletons: {len(self.skeletons)}.")
 
     def display_army_for_removal(self):
@@ -130,6 +129,7 @@ class SkeletonArmy:
                 if critical_hit:
                     total_damage += damage
                     st.write(f"Skeleton {skeleton.id} critically hit for {damage} damage.")
+                    hits.append(skel_id)
                     num_hits+=1
                     num_crit_hits+=1
 
@@ -137,6 +137,7 @@ class SkeletonArmy:
                     st.write(f"Skeleton {skeleton.id} critically missed.")
 
                 elif hit:
+                    hits.append(skel_id)
                     total_damage += damage
                     num_hits += 1
                     num_crit_fails += 1
@@ -151,46 +152,53 @@ class SkeletonArmy:
         st.write(f"{num_hits} skeletons hit for {total_damage} total damage")
     
     def group_saving_throw(self, affected_skeleton_ids, dc, potential_damage, ability_type='dexterity'):
-        critical_successes = []
-        critical_failures = []
+        successes = []
+
+        num_successes = 0
+        num_crit_success = 0
+        num_crit_fails = 0
+        
         for skel_id in affected_skeleton_ids:
             skeleton = next((s for s in self.skeletons if s.id == skel_id), None)
             if skeleton:
                 success, roll, critical_success, critical_failure = skeleton.saving_throw(dc, ability_type)
 
                 if critical_success:
-                    critical_successes.append(skeleton.id)
+                    st.write(f"Skeleton {skeleton.id} rolled a 20. Critical success on the saving throw.")
+                    damage = 0
+
+                    successes.append(skel_id)
+                    num_crit_success +=1
+                    num_successes+=1
+
                 elif critical_failure:
-                    critical_failures.append(skeleton.id)
-                    
-                if critical_success:
-                    print(f"Skeleton {skeleton.id} rolled a 20. Critical success on the saving throw.")
-                    damage = potential_damage // 2
-                elif critical_failure:
-                    print(f"Skeleton {skeleton.id} rolled a 1. Critical failure on the saving throw.")
+                    st.write(f"Skeleton {skeleton.id} rolled a 1. Critical failure on the saving throw.")
                     damage = potential_damage
+                    
+                    num_crit_fails += 1
+
                 elif success:
-                    print(f"Skeleton {skeleton.id} succeeded the saving throw and takes {potential_damage // 2} damage.")
+                    successes.append(skel_id)
+
                     damage = potential_damage // 2
+                    num_successes+=1
+
                 else:
-                    print(f"Skeleton {skeleton.id} failed the saving throw and takes {potential_damage} damage.")
                     damage = potential_damage
 
                 skeleton.current_health -= damage
                 skeleton.current_health = max(skeleton.current_health, 0)
 
                 if skeleton.current_health == 0:
-                    print(f"Skeleton {skeleton.id} has collapsed.")
+                    st.write(f"Skeleton {skeleton.id} has collapsed.")
 
             else:
                 print(f"No skeleton with ID {skel_id} found.")
-
-        # Summarize critical successes and failures
-        if critical_successes:
-            print(f"Skeletons {', '.join(map(str, critical_successes))} critically succeeded.")
-        if critical_failures:
-            print(f"Skeletons {', '.join(map(str, critical_failures))} critically failed.")
         
+        # Summarize which skeletons succeeded
+        if successes:
+            st.write(f"Skeletons {', '.join(map(str, successes))} succeeded.")
+
         self.skeletons = [skeleton for skeleton in self.skeletons if skeleton.current_health > 0]
         self.display_army_health()
 
@@ -230,6 +238,10 @@ class SkeletonArmy:
         print("Current health of the Skeleton Army:")
         for skeleton in self.skeletons:
             st.write(skeleton.display_health())
+    
+    def get_skeletons(self):
+        return self.skeletons
+
 #CLI
 
 def set_starting_skeleton_id():
@@ -259,15 +271,6 @@ def attack_with_army(army):
         attack_type = st.selectbox("Enter the attack type:", ['sword','bow'])
         attacking_skeleton_ids = parse_skeleton_ids(input_str)
         army.group_attack(attacking_skeleton_ids, armor_class, attack_type)
-
-def roll_saving_throws(army):
-    input_str = input("Enter the IDs of skeletons making a saving throw (e.g., '1-3, 5'): ")
-    ability_type = input("Enter the ability for the saving throw (strength, dexterity, etc.): ").lower()
-    dc = int(input("Enter the Difficulty Check (DC) for the saving throw: "))
-    potential_damage = int(input("Enter the potential damage on a failed save: "))
-
-    affected_skeleton_ids = parse_skeleton_ids(input_str)
-    army.group_saving_throw(affected_skeleton_ids, dc, potential_damage, ability_type)
 
 def update_skeleton_health(army):
     army.display_army_health()
@@ -323,13 +326,81 @@ def remove_skeletons_cli(army):
     skeleton_ids = parse_skeleton_ids(input_str)
     army.remove_skeletons(skeleton_ids)
 
+def display_skeleton(skeleton,images):
+    current_health = skeleton.current_health
+    max_health = skeleton.max_health
+
+    if current_health < (max_health*0.25):
+        image_path = images[-1]
+
+    elif current_health < (max_health*0.75):
+        image_path = images[-2]  
+    
+    else: 
+        image_path = images[-3]
+
+    st.image(image_path, width=150)
+    st.write('Skeleton: ' + str(skeleton.id))
+    st.write(f"Health = {str(skeleton.current_health)}/{str(skeleton.max_health)}")
+
+
 ###########################################################################
 # Streamlit APP
 ###########################################################################
+st.set_page_config(layout="wide")
+
+# Create font color markdown variables 
+st.markdown(
+    """
+    <style>
+    .miss_fail {
+        font-size:20px !important;
+        color:#de0909 !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    """
+    <style>
+    .hit_succeed {
+        font-size:20px !important;
+        color:#f0f5f4 !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
+st.markdown(
+    """
+    <style>
+    .crit_succeed {
+        font-size:20px !important;
+        color:#008000 !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    """
+    <style>
+    .crit_fail{
+        font-size:20px !important;
+        color:#000000 !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 if 'undead_hoard' not in st.session_state:
     st.session_state['undead_hoard'] = {}
-
-st.set_page_config(layout="wide")
 
 # Create a space column on the left, then the title, and then the image on the right
 col_image, col_title = st.columns([0.13,0.7])
@@ -342,7 +413,7 @@ with col_title:
 
 # Use Streamlit's 'columns' layout to display buttons side by side
 # col1,col2,vertical_line,outputs = st.columns([2.5,2.5,0.1,1.5])
-col1,vertical_line,outputs = st.columns([1.5,0.1,2.5])
+col1,vertical_line,outputs1,outputs2 = st.columns([1.5,0.1,2,2])
 
 if 'undead_hoard' in st.session_state:
     undead_hoard = st.session_state['undead_hoard']
@@ -361,8 +432,42 @@ with col1:
     if option == 'Add Undead to Existing Hoard':
         add_undead(st.session_state['undead_hoard'])
 
+    if option == 'Roll Saving Throws':
+        input_str = st.text_input("Enter the IDs of attacking skeletons (e.g., '1-3, 5'): ")
+        dc = st.text_input("Enter the Difficulty Check (DC) for the saving throw: ")
+        potential_damage = st.text_input("Enter the potential damage on a failed save: ")
+        ability_type = st.selectbox("Enter the ability for the saving throw: ",['Strength','Dexterity','Constitution','Intelligence','Wisdom','Charisma'])
+
+        if ((dc != '') and (input_str != '') and (potential_damage != '')):   
+            affected_skeleton_ids = parse_skeleton_ids(input_str)
+            if st.button("Roll"):
+                skeleton_army.group_saving_throw(affected_skeleton_ids, int(dc), int(potential_damage), ability_type)
+
     if option == 'Attack':
         attack_with_army(skeleton_army)
 
     if option == 'Display Army':
         skeleton_army.display_army_health()
+    
+healthy_skelly_image_path = '/Users/scottsmacbook/dnd_necromancer_helper/photos/Health Skeleton.png'
+damaged_skelly_image_path = '/Users/scottsmacbook/dnd_necromancer_helper/photos/Damaged Skeleton.png'
+almost_dead_skelly_image_path = '/Users/scottsmacbook/dnd_necromancer_helper/photos/Nearly Defeated Skeleton.png'
+
+images = []
+images.append(healthy_skelly_image_path)
+images.append(damaged_skelly_image_path)
+images.append(almost_dead_skelly_image_path)
+
+if 'Skeleton' in undead_hoard:
+    skeleton_army = undead_hoard['Skeleton']
+    skeletons = skeleton_army.get_skeletons()
+
+    with outputs1:
+        even_skeletons = skeletons[0::2]
+        for skeleton in even_skeletons:
+            display_skeleton(skeleton,images)
+
+    with outputs2:
+        odd_skeletons = skeletons[1::2]
+        for skeleton in odd_skeletons:
+            display_skeleton(skeleton,images)
