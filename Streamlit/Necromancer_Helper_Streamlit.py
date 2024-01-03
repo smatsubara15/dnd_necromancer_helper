@@ -118,34 +118,37 @@ class SkeletonArmy:
 
     def group_attack(self, attacking_skeleton_ids, armor_class, attack_type='sword'):
         total_damage = 0
-        critical_hits = []
-        critical_misses = []
+        hits = []
+        num_hits = 0
+        num_crit_hits = 0
+        num_crit_fails = 0
+
         for skel_id in attacking_skeleton_ids:
             skeleton = next((s for s in self.skeletons if s.id == skel_id), None)
             if skeleton:
                 hit, damage, critical_hit, critical_miss = skeleton.attack_roll(armor_class, attack_type)
                 if critical_hit:
-                    critical_hits.append(skeleton.id)
                     total_damage += damage
-                    print(f"Skeleton {skeleton.id} critically hit for {damage} damage.")
+                    st.write(f"Skeleton {skeleton.id} critically hit for {damage} damage.")
+                    num_hits+=1
+                    num_crit_hits+=1
+
                 elif critical_miss:
-                    critical_misses.append(skeleton.id)
-                    print(f"Skeleton {skeleton.id} critically missed.")
+                    st.write(f"Skeleton {skeleton.id} critically missed.")
+
                 elif hit:
                     total_damage += damage
-                    print(f"Skeleton {skeleton.id} hit for {damage} damage.")
-                else:
-                    print(f"Skeleton {skeleton.id} missed.")
+                    num_hits += 1
+                    num_crit_fails += 1
+
             else:
-                print(f"No skeleton with ID {skel_id} found.")
+                st.write(f"No skeleton with ID {skel_id} found.")
 
-        # Summarize critical hits and misses
-        if critical_hits:
-            print(f"Skeletons {', '.join(map(str, critical_hits))} critically hit.")
-        if critical_misses:
-            print(f"Skeletons {', '.join(map(str, critical_misses))} critically missed.")
+        # Summarize which skeletons hit
+        if hits:
+            st.write(f"Skeletons {', '.join(map(str, hits))} hit.")
 
-        print(f"Total damage dealt by all attacking skeletons: {total_damage}")
+        st.write(f"{num_hits} skeletons hit for {total_damage} total damage")
     
     def group_saving_throw(self, affected_skeleton_ids, dc, potential_damage, ability_type='dexterity'):
         critical_successes = []
@@ -249,12 +252,13 @@ def parse_skeleton_ids(input_str):
     return skeleton_ids
 
 def attack_with_army(army):
-    input_str = input("Enter the IDs of attacking skeletons (e.g., '1-3, 5'): ")
-    armor_class = int(input("Enter the target's Armor Class (AC): "))
-    attack_type = input("Enter the attack type (sword/bow): ")
-
-    attacking_skeleton_ids = parse_skeleton_ids(input_str)
-    army.group_attack(attacking_skeleton_ids, armor_class, attack_type)
+    input_str = st.text_input("Enter the IDs of attacking skeletons (e.g., '1-3, 5'): ")
+    armor_class = st.text_input("Enter the target's Armor Class (AC): ")
+    if (armor_class != '') and (input_str != ''):
+        armor_class = int(armor_class)
+        attack_type = st.selectbox("Enter the attack type:", ['sword','bow'])
+        attacking_skeleton_ids = parse_skeleton_ids(input_str)
+        army.group_attack(attacking_skeleton_ids, armor_class, attack_type)
 
 def roll_saving_throws(army):
     input_str = input("Enter the IDs of skeletons making a saving throw (e.g., '1-3, 5'): ")
@@ -340,6 +344,12 @@ with col_title:
 # col1,col2,vertical_line,outputs = st.columns([2.5,2.5,0.1,1.5])
 col1,vertical_line,outputs = st.columns([1.5,0.1,2.5])
 
+if 'undead_hoard' in st.session_state:
+    undead_hoard = st.session_state['undead_hoard']
+
+if 'Skeleton' in undead_hoard:
+    skeleton_army = undead_hoard['Skeleton']
+
 with col1: 
     # Dropdown menu
     option = st.selectbox('What would you like to do?', ['Raise Hoard','Add Undead to Existing Hoard','Attack', 'Roll Saving Throws', 'Display Army'])
@@ -351,12 +361,8 @@ with col1:
     if option == 'Add Undead to Existing Hoard':
         add_undead(st.session_state['undead_hoard'])
 
-    # if option == 'Attack':
-
+    if option == 'Attack':
+        attack_with_army(skeleton_army)
 
     if option == 'Display Army':
-        if 'undead_hoard' in st.session_state:
-            undead_hoard = st.session_state['undead_hoard']
-            if 'Skeleton' in undead_hoard:
-                army = undead_hoard['Skeleton']
-                army.display_army_health()
+        skeleton_army.display_army_health()
