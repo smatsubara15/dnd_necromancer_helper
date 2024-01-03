@@ -222,11 +222,11 @@ class SkeletonArmy:
             
     def display_army_health(self):
         if not self.skeletons:
-            print("No skeletons in the army.")
+            st.write("No skeletons in the army.")
             return
         print("Current health of the Skeleton Army:")
         for skeleton in self.skeletons:
-            print(skeleton.display_health())
+            st.write(skeleton.display_health())
 #CLI
 
 def set_starting_skeleton_id():
@@ -275,9 +275,43 @@ def update_skeleton_health(army):
     
     army.update_health(updates)
 
+def create_and_add_skeletons():
+    skeleton_army = SkeletonArmy(health=47, attack_bonus=13, dex_bonus=2)
+    num_skeletons = add_skeletons_cli(skeleton_army)
+    return skeleton_army,num_skeletons
+
 def add_skeletons_cli(army):
-    count = int(input("How many skeletons would you like to add? "))
-    army.add_skeletons(count)
+    number_to_add = st.text_input('How many skeletons would you like to add? ')
+    if number_to_add != '':
+        army.add_skeletons(int(number_to_add))
+
+    return number_to_add
+    
+def raise_hoard(undead_hoard):
+    undead_option = st.selectbox('Which undead would you like to raise?', ['None','Skeleton'])
+
+    if undead_option == 'Skeleton':
+        if undead_option not in undead_hoard:
+            army,num_skeletons = create_and_add_skeletons()
+            if num_skeletons != '':
+                st.write("Raised " + num_skeletons + " " + undead_option + "s to the hoard")
+                undead_hoard[undead_option] = army
+        else: 
+            st.write('Skeleton Hoard Already Exists')
+
+        # else: 
+        #     new_skeleton_hoard = st.selectbox("Skeleton hoard already exists, would you like to delete the old group and make a new one?",['Yes','No'])
+        #     if new_skeleton_hoard == 'Yes':
+        #         army,num_skeletons = create_and_add_skeletons()
+
+def add_undead(undead_hoard):
+    undead_option = st.selectbox('Which undead would you like to raise?', ['None','Skeleton'])
+    if undead_option == 'Skeleton':
+        army = undead_hoard['Skeleton']
+        num_skeletons = add_skeletons_cli(army)
+        if num_skeletons != '':
+            st.write("Added " + num_skeletons + " " + undead_option + "s to the hoard")
+
 
 def remove_skeletons_cli(army):
     army.display_army_health()
@@ -285,10 +319,11 @@ def remove_skeletons_cli(army):
     skeleton_ids = parse_skeleton_ids(input_str)
     army.remove_skeletons(skeleton_ids)
 
-
 ###########################################################################
 # Streamlit APP
 ###########################################################################
+if 'undead_hoard' not in st.session_state:
+    st.session_state['undead_hoard'] = {}
 
 st.set_page_config(layout="wide")
 
@@ -302,4 +337,22 @@ with col_title:
     st.title("Necromancers Army")
 
 # Use Streamlit's 'columns' layout to display buttons side by side
-col1,col2,vertical_line,outputs = st.columns([2.5,2.5,0.1,1.5])
+# col1,col2,vertical_line,outputs = st.columns([2.5,2.5,0.1,1.5])
+col1,vertical_line,outputs = st.columns([1.5,0.1,2.5])
+
+with col1: 
+    # Dropdown menu
+    option = st.selectbox('What would you like to do?', ['Raise Hoard','Add Undead to Existing Hoard','Attack', 'Roll Saving Throws', 'Display Army'])
+
+    # Check if the user selects 'Other'
+    if option == 'Raise Hoard':
+        raise_hoard(st.session_state['undead_hoard'])
+    
+    if option == 'Add Undead to Existing Hoard':
+        add_undead(st.session_state['undead_hoard'])
+
+    if option == 'Display Army':
+        if 'undead_hoard' in st.session_state:
+            
+            army = st.session_state['undead_hoard']['Skeleton']
+            army.display_army_health()

@@ -219,7 +219,7 @@ class SkeletonArmy:
             
     def display_army_health(self):
         if not self.skeletons:
-            print("No skeletons in the army.")
+            st.write("No skeletons in the army.")
             return
         print("Current health of the Skeleton Army:")
         for skeleton in self.skeletons:
