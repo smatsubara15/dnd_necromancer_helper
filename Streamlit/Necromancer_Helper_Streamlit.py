@@ -34,6 +34,10 @@ class Skeleton:
         self.current_health = max_health
         self.attack_bonus = attack_bonus
         self.dex_bonus = dex_bonus
+        self.last_roll = None
+        self.num_successes = 0
+        self.num_fails= 0
+        self.last_action = None
         Skeleton._id_counter += 1
 
     def attack_roll(self, armor_class, attack_type='sword'):
@@ -60,7 +64,7 @@ class Skeleton:
         else:
             hit = roll + bonus >= armor_class
 
-        return hit, damage, critical_hit, critical_miss
+        return hit, damage, critical_hit, critical_miss,roll
 
     def saving_throw(self, dc, ability_type='dexterity'):
         # Fetch the correct bonus for the saving throw based on ability_type
@@ -125,22 +129,38 @@ class SkeletonArmy:
         for skel_id in attacking_skeleton_ids:
             skeleton = next((s for s in self.skeletons if s.id == skel_id), None)
             if skeleton:
-                hit, damage, critical_hit, critical_miss = skeleton.attack_roll(armor_class, attack_type)
+                hit, damage, critical_hit, critical_miss,roll = skeleton.attack_roll(armor_class, attack_type)
+                skeleton.last_roll = roll
+
                 if critical_hit:
                     total_damage += damage
                     st.write(f"Skeleton {skeleton.id} critically hit for {damage} damage.")
                     hits.append(skel_id)
                     num_hits+=1
                     num_crit_hits+=1
+                    skeleton.last_action = "Critical Hit!"
+                    skeleton.num_successes += 1
+
 
                 elif critical_miss:
                     st.write(f"Skeleton {skeleton.id} critically missed.")
+                    skeleton.last_action = "Critical Miss"
+                    skeleton.num_fails += 1
+
 
                 elif hit:
                     hits.append(skel_id)
                     total_damage += damage
                     num_hits += 1
                     num_crit_fails += 1
+                    skeleton.num_successes += 1
+                    skeleton.last_action = "Hit!"
+
+                else: 
+                    skeleton.num_fails += 1
+                    skeleton.last_action = "Miss"
+
+
 
             else:
                 st.write(f"No skeleton with ID {skel_id} found.")
@@ -162,6 +182,7 @@ class SkeletonArmy:
             skeleton = next((s for s in self.skeletons if s.id == skel_id), None)
             if skeleton:
                 success, roll, critical_success, critical_failure = skeleton.saving_throw(dc, ability_type)
+                skeleton.last_roll = roll
 
                 if critical_success:
                     st.write(f"Skeleton {skeleton.id} rolled a 20. Critical success on the saving throw.")
@@ -171,11 +192,18 @@ class SkeletonArmy:
                     num_crit_success +=1
                     num_successes+=1
 
+                    skeleton.last_action = "Critical Success!"
+                    skeleton.num_successes += 1
+
                 elif critical_failure:
                     st.write(f"Skeleton {skeleton.id} rolled a 1. Critical failure on the saving throw.")
                     damage = potential_damage
                     
                     num_crit_fails += 1
+                    skeleton.num_fails += 1
+
+                    skeleton.last_action = "Critical Failure"
+
 
                 elif success:
                     successes.append(skel_id)
@@ -183,8 +211,16 @@ class SkeletonArmy:
                     damage = potential_damage // 2
                     num_successes+=1
 
+                    skeleton.last_action = "Successful Saving Throw"
+
+                    skeleton.num_successes += 1
+
+
                 else:
                     damage = potential_damage
+                    skeleton.num_fails += 1
+                    skeleton.last_action = "Failed Saving Throw"
+
 
                 skeleton.current_health -= damage
                 skeleton.current_health = max(skeleton.current_health, 0)
@@ -326,7 +362,7 @@ def remove_skeletons_cli(army):
     skeleton_ids = parse_skeleton_ids(input_str)
     army.remove_skeletons(skeleton_ids)
 
-def display_skeleton(skeleton,images):
+def display_skeleton_image(skeleton,images):
     current_health = skeleton.current_health
     max_health = skeleton.max_health
 
@@ -339,10 +375,24 @@ def display_skeleton(skeleton,images):
     else: 
         image_path = images[-3]
 
-    st.image(image_path, width=150)
+    st.image(image_path, width=188)
+    # st.write('\n')
+    # st.write('\n')
+
+
+def display_skeleton_stats(skeleton):
     st.write('Skeleton: ' + str(skeleton.id))
     st.write(f"Health = {str(skeleton.current_health)}/{str(skeleton.max_health)}")
+    st.write("Last Roll: " + str(skeleton.last_roll))
+    st.write("Last Action: " + str(skeleton.last_action))
 
+    total_attempts = skeleton.num_successes + skeleton.num_fails
+    if(total_attempts==0):
+        hit_rate = 'NA'
+    else:
+        hit_rate = skeleton.num_successes / total_attempts
+        hit_rate = str(round(hit_rate * 100,2))+'%'
+    st.write("Success Rate: " + hit_rate)
 
 ###########################################################################
 # Streamlit APP
@@ -403,7 +453,7 @@ if 'undead_hoard' not in st.session_state:
     st.session_state['undead_hoard'] = {}
 
 # Create a space column on the left, then the title, and then the image on the right
-col_image, col_title = st.columns([0.13,0.7])
+col_image, col_title = st.columns([0.09,0.7])
 title_image_path = '/Users/scottsmacbook/dnd_necromancer_helper/photos/necromancy_symbol.png'  # Replace with the actual path
 
 with col_image:
@@ -413,7 +463,7 @@ with col_title:
 
 # Use Streamlit's 'columns' layout to display buttons side by side
 # col1,col2,vertical_line,outputs = st.columns([2.5,2.5,0.1,1.5])
-col1,vertical_line,outputs1,outputs2 = st.columns([1.5,0.1,2,2])
+col1,vertical_line,outputs1,outputs2,outputs3,outputs4 = st.columns([1.5,0.1,0.35,0.5,0.35,0.5])
 
 if 'undead_hoard' in st.session_state:
     undead_hoard = st.session_state['undead_hoard']
@@ -465,9 +515,18 @@ if 'Skeleton' in undead_hoard:
     with outputs1:
         even_skeletons = skeletons[0::2]
         for skeleton in even_skeletons:
-            display_skeleton(skeleton,images)
+            display_skeleton_image(skeleton,images)
+    
+    with outputs2: 
+        for skeleton in even_skeletons:
+            display_skeleton_stats(skeleton)
 
-    with outputs2:
+
+    with outputs3:
         odd_skeletons = skeletons[1::2]
         for skeleton in odd_skeletons:
-            display_skeleton(skeleton,images)
+            display_skeleton_image(skeleton,images)
+
+    with outputs4: 
+        for skeleton in odd_skeletons:
+            display_skeleton_stats(skeleton)
