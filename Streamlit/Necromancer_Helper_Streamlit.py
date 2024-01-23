@@ -35,6 +35,7 @@ class Skeleton:
         self.attack_bonus = attack_bonus
         self.dex_bonus = dex_bonus
         self.damage_buff = 0
+        self.buff_duration = 0
         self.last_roll = None
         self.num_successes = 0
         self.num_fails= 0
@@ -65,6 +66,10 @@ class Skeleton:
             hit = False  # A natural 1 is always a miss
         else:
             hit = roll + bonus >= armor_class
+
+        self.buff_duration = max(0, self.buff_duration-1)
+        if(self.buff_duration==0):
+            self.damage_buff = 0
 
         return hit, damage, critical_hit, critical_miss,roll
 
@@ -173,7 +178,6 @@ class SkeletonArmy:
         # Summarize which skeletons hit
         if hits:
             st.write(f"Skeletons {', '.join(map(str, hits))} hit.")
-
         st.write(f"{num_hits} skeletons hit for {total_damage} total damage")
     
     def group_saving_throw(self, affected_skeleton_ids, dc, potential_damage, ability_type='dexterity'):
@@ -261,10 +265,11 @@ class SkeletonArmy:
         # Display the health of the remaining skeletons
         self.display_army_health()
 
-    def add_damage_buff(self,buff):
-        if (buff!=''):
+    def add_damage_buff(self,buff,duration):
+        if ((buff!='') and (duration != '')):
             for skeleton in self.skeletons:
                 skeleton.damage_buff += int(buff)
+                skeleton.buff_duration = int(duration)
 
     def reset_buff(self):
         for skeleton in self.skeletons:
@@ -534,7 +539,7 @@ with col1:
         damage_buff = st.text_input("Enter the damage buff: ")
         duration = st.text_input("Enter the duration of the buff: ")
         if st.button("Apply Buff"):
-            skeleton_army.add_damage_buff(damage_buff)
+            skeleton_army.add_damage_buff(damage_buff,duration)
             st.write(f'Added a damage buff of {damage_buff} to the army')
 
         if st.button("Reset Buff"):
