@@ -34,6 +34,7 @@ class Skeleton:
         self.current_health = max_health
         self.attack_bonus = attack_bonus
         self.dex_bonus = dex_bonus
+        self.damage_buff = 0
         self.last_roll = None
         self.num_successes = 0
         self.num_fails= 0
@@ -45,13 +46,13 @@ class Skeleton:
         # Choose the appropriate bonus and damage based on the attack type
         if attack_type == 'sword':
             bonus = Skeleton.sword_to_hit
-            damage = Skeleton.sword_damage + random.randint(1,6)
+            damage = Skeleton.sword_damage + random.randint(1,6) + int(self.damage_buff)
+
         elif attack_type == 'bow':
             bonus = Skeleton.bow_to_hit
-            damage = Skeleton.bow_damage + random.randint(1,6)
+            damage = Skeleton.bow_damage + random.randint(1,6) + int(self.damage_buff)
         else:
             raise ValueError(f"Unknown attack type: {attack_type}")
-
         roll = random.randint(1, 20)
         critical_hit = roll == 20
         critical_miss = roll == 1
@@ -260,6 +261,15 @@ class SkeletonArmy:
         # Display the health of the remaining skeletons
         self.display_army_health()
 
+    def add_damage_buff(self,buff):
+        if (buff!=''):
+            for skeleton in self.skeletons:
+                skeleton.damage_buff += int(buff)
+
+    def reset_buff(self):
+        for skeleton in self.skeletons:
+            skeleton.damage_buff = 0
+
     def add_skeleton(self):
         self.skeletons.append(Skeleton(self.health, self.attack_bonus, self.dex_bonus))
         print(f"One skeleton added. Total number of skeletons: {len(self.skeletons)}.")
@@ -303,17 +313,6 @@ def parse_skeleton_ids(input_str):
             skeleton_ids.append(int(part))
     return skeleton_ids
 
-def attack_with_army(army):
-    # input_str = st.text_input("Enter the IDs of attacking skeletons (e.g., '1-3, 5, all'): ")
-    # if input_str.lower() == 'all':
-    #     input_str = '1-50'
-    # armor_class = st.text_input("Enter the target's Armor Class (AC): ")
-    # if (armor_class != '') and (input_str != ''):
-    #     armor_class = int(armor_class)
-    #     attack_type = st.selectbox("Enter the attack type:", ['None','sword','bow'])
-    #     if (attack_type!='None'):
-    #         attacking_skeleton_ids = parse_skeleton_ids(input_str)
-    army.group_attack(attacking_skeleton_ids, armor_class, attack_type)
 
 def update_skeleton_health(army):
     army.display_army_health()
@@ -498,7 +497,7 @@ if 'Skeleton' in undead_hoard:
 
 with col1: 
     # Dropdown menu
-    option = st.selectbox('What would you like to do?', ['Raise Hoard','Add Undead to Existing Hoard','Attack', 'Roll Saving Throws', 'Display Army'])
+    option = st.selectbox('What would you like to do?', ['Raise Hoard','Add Undead to Existing Hoard','Attack', 'Roll Saving Throws', 'Buff Army'])
 
     # Check if the user selects 'Other'
     if option == 'Raise Hoard':
@@ -531,8 +530,16 @@ with col1:
             if st.button("Roll"):
                 skeleton_army.group_attack(attacking_skeleton_ids, armor_class, attack_type)
 
-    if option == 'Edit Army':
-        skeleton_army.display_army_health()
+    if option == 'Buff Army':
+        damage_buff = st.text_input("Enter the damage buff: ")
+        duration = st.text_input("Enter the duration of the buff: ")
+        if st.button("Apply Buff"):
+            skeleton_army.add_damage_buff(damage_buff)
+            st.write(f'Added a damage buff of {damage_buff} to the army')
+
+        if st.button("Reset Buff"):
+            skeleton_army.reset_buff()
+
     
 healthy_skelly_image_path = '/Users/scottsmacbook/dnd_necromancer_helper/photos/Health Skeleton.png'
 damaged_skelly_image_path = '/Users/scottsmacbook/dnd_necromancer_helper/photos/Damaged Skeleton.png'
