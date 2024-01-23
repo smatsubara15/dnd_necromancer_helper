@@ -13,6 +13,8 @@
 - create hit rate class variable 
 - have separate file that includes all 
 
+- Docker deployment: https://www.youtube.com/watch?v=Djnnp-g3ep0
+
 #####################################################
 from io import StringIO
 

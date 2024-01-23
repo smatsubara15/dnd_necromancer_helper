@@ -8,9 +8,9 @@ class Skeleton:
     
     # Class attributes for attack details
     sword_to_hit = 15
-    sword_damage = 14
+    sword_damage = 11
     bow_to_hit = 13
-    bow_damage = 8
+    bow_damage = 5
 
     # Adding ability score bonuses
     ability_bonuses = {
@@ -38,16 +38,17 @@ class Skeleton:
         self.num_successes = 0
         self.num_fails= 0
         self.last_action = None
+        self.damage_done = 0
         Skeleton._id_counter += 1
 
     def attack_roll(self, armor_class, attack_type='sword'):
         # Choose the appropriate bonus and damage based on the attack type
         if attack_type == 'sword':
             bonus = Skeleton.sword_to_hit
-            damage = Skeleton.sword_damage
+            damage = Skeleton.sword_damage + random.randint(1,6)
         elif attack_type == 'bow':
             bonus = Skeleton.bow_to_hit
-            damage = Skeleton.bow_damage
+            damage = Skeleton.bow_damage + random.randint(1,6)
         else:
             raise ValueError(f"Unknown attack type: {attack_type}")
 
@@ -140,6 +141,8 @@ class SkeletonArmy:
                     num_crit_hits+=1
                     skeleton.last_action = "Critical Hit!"
                     skeleton.num_successes += 1
+                    skeleton.damage_done += damage
+
 
 
                 elif critical_miss:
@@ -155,6 +158,7 @@ class SkeletonArmy:
                     num_crit_fails += 1
                     skeleton.num_successes += 1
                     skeleton.last_action = "Hit!"
+                    skeleton.damage_done += damage
 
                 else: 
                     skeleton.num_fails += 1
@@ -162,8 +166,8 @@ class SkeletonArmy:
 
 
 
-            else:
-                st.write(f"No skeleton with ID {skel_id} found.")
+            # else:
+            #     st.write(f"No skeleton with ID {skel_id} found.")
 
         # Summarize which skeletons hit
         if hits:
@@ -300,13 +304,16 @@ def parse_skeleton_ids(input_str):
     return skeleton_ids
 
 def attack_with_army(army):
-    input_str = st.text_input("Enter the IDs of attacking skeletons (e.g., '1-3, 5'): ")
-    armor_class = st.text_input("Enter the target's Armor Class (AC): ")
-    if (armor_class != '') and (input_str != ''):
-        armor_class = int(armor_class)
-        attack_type = st.selectbox("Enter the attack type:", ['sword','bow'])
-        attacking_skeleton_ids = parse_skeleton_ids(input_str)
-        army.group_attack(attacking_skeleton_ids, armor_class, attack_type)
+    # input_str = st.text_input("Enter the IDs of attacking skeletons (e.g., '1-3, 5, all'): ")
+    # if input_str.lower() == 'all':
+    #     input_str = '1-50'
+    # armor_class = st.text_input("Enter the target's Armor Class (AC): ")
+    # if (armor_class != '') and (input_str != ''):
+    #     armor_class = int(armor_class)
+    #     attack_type = st.selectbox("Enter the attack type:", ['None','sword','bow'])
+    #     if (attack_type!='None'):
+    #         attacking_skeleton_ids = parse_skeleton_ids(input_str)
+    army.group_attack(attacking_skeleton_ids, armor_class, attack_type)
 
 def update_skeleton_health(army):
     army.display_army_health()
@@ -375,16 +382,20 @@ def display_skeleton_image(skeleton,images):
     else: 
         image_path = images[-3]
 
+    skeleton_label = 'Skeleton: ' + str(skeleton.id)
+    st.markdown(f'<u class="skeleton">{skeleton_label}</u>', unsafe_allow_html=True)    
+
     st.image(image_path, width=188)
     # st.write('\n')
     # st.write('\n')
 
 
 def display_skeleton_stats(skeleton):
-    st.write('Skeleton: ' + str(skeleton.id))
+    st.write('\n')
     st.write(f"Health = {str(skeleton.current_health)}/{str(skeleton.max_health)}")
     st.write("Last Roll: " + str(skeleton.last_roll))
     st.write("Last Action: " + str(skeleton.last_action))
+    st.write("Damage Done: " + str(skeleton.damage_done))
 
     total_attempts = skeleton.num_successes + skeleton.num_fails
     if(total_attempts==0):
@@ -393,6 +404,8 @@ def display_skeleton_stats(skeleton):
         hit_rate = skeleton.num_successes / total_attempts
         hit_rate = str(round(hit_rate * 100,2))+'%'
     st.write("Success Rate: " + hit_rate)
+    st.write('\n')
+    st.write('\n')
 
 ###########################################################################
 # Streamlit APP
@@ -405,7 +418,7 @@ st.markdown(
     <style>
     .miss_fail {
         font-size:20px !important;
-        color:#de0909 !important;
+        color:#FF0000 !important;
     }
     </style>
     """,
@@ -443,6 +456,18 @@ st.markdown(
     .crit_fail{
         font-size:20px !important;
         color:#000000 !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    """
+    <style>
+    .skeleton{
+        font-size:20px !important;
+        color:#B200ED !important;
     }
     </style>
     """,
@@ -494,9 +519,19 @@ with col1:
                 skeleton_army.group_saving_throw(affected_skeleton_ids, int(dc), int(potential_damage), ability_type)
 
     if option == 'Attack':
-        attack_with_army(skeleton_army)
+        input_str = st.text_input("Enter the IDs of attacking skeletons (e.g., '1-3, 5, all'): ")
+        if input_str.lower() == 'all':
+            input_str = '1-50'
+        armor_class = st.text_input("Enter the target's Armor Class (AC): ")
+        attack_type = st.selectbox("Enter the attack type:", ['None','sword','bow'])
 
-    if option == 'Display Army':
+        if (attack_type!='None' and (input_str != '') and (armor_class != '')):
+            attacking_skeleton_ids = parse_skeleton_ids(input_str)
+            armor_class = int(armor_class)
+            if st.button("Roll"):
+                skeleton_army.group_attack(attacking_skeleton_ids, armor_class, attack_type)
+
+    if option == 'Edit Army':
         skeleton_army.display_army_health()
     
 healthy_skelly_image_path = '/Users/scottsmacbook/dnd_necromancer_helper/photos/Health Skeleton.png'
