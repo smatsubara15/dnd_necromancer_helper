@@ -1,7 +1,9 @@
 import random
 import streamlit as st
 import pandas as pd
-
+import math
+import pickle
+import io
 
 class Skeleton:
     _id_counter = 1  # Start with 1 or set this in the set_starting_id method
@@ -352,7 +354,6 @@ def raise_hoard(undead_hoard):
                 undead_hoard[undead_option] = army
         else: 
             st.write('Skeleton Hoard Already Exists')
-
         # else: 
         #     new_skeleton_hoard = st.selectbox("Skeleton hoard already exists, would you like to delete the old group and make a new one?",['Yes','No'])
         #     if new_skeleton_hoard == 'Yes':
@@ -506,11 +507,11 @@ if 'undead_hoard' not in st.session_state:
     st.session_state['undead_hoard'] = {}
 
 # Create a space column on the left, then the title, and then the image on the right
-col_image, col_title = st.columns([0.09,0.7])
+col_image, col_title,space, download = st.columns([0.5,0.5,3,0.1])
 title_image_path = '/Users/scottsmacbook/dnd_necromancer_helper/photos/necromancy_symbol.png'  # Replace with the actual path
 
 with col_image:
-    st.image(title_image_path, width=150)
+    st.image(title_image_path)
 with col_title:
     st.title("Necromancers Army")
 
@@ -579,9 +580,18 @@ images.append(healthy_skelly_image_path)
 images.append(damaged_skelly_image_path)
 images.append(almost_dead_skelly_image_path)
 
+
+
 if 'Skeleton' in undead_hoard:
     skeleton_army = undead_hoard['Skeleton']
     skeletons = skeleton_army.get_skeletons()
+    num_skeletons = len(skeletons)
+    num_rows = int(math.ceil(num_skeletons/3))
+
+    with vertical_line:
+        num_line_pixels = 450*num_rows
+        line_len = str(num_line_pixels)+'px'
+        st.markdown(f'<div style="border-left: 2px solid #808080; height: {line_len}"></div>', unsafe_allow_html=True)
 
     with outputs1:
         group_1 = skeletons[0::3]
@@ -598,3 +608,9 @@ if 'Skeleton' in undead_hoard:
         group_3 = skeletons[2::3]
         for skeleton in group_3:
             display_skeleton_image(skeleton,images)
+
+with download:
+    # Serialize the object
+    buffer = io.BytesIO()
+    pickle.dump(army, buffer)
+    buffer.seek(0)
