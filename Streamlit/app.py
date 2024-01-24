@@ -387,19 +387,10 @@ def display_skeleton_image(skeleton,images):
         image_path = images[-3]
 
     skeleton_label = 'Skeleton: ' + str(skeleton.id)
-    st.markdown(f'<u class="skeleton">{skeleton_label}</u>', unsafe_allow_html=True)    
+    skeleton_health = f'{str(current_health)}/{str(max_health)}'
 
-    st.image(image_path, width=188)
-    # st.write('\n')
-    # st.write('\n')
-
-
-def display_skeleton_stats(skeleton):
-    st.write('\n')
-    st.write(f"Health = {str(skeleton.current_health)}/{str(skeleton.max_health)}")
-    st.write("Last Roll: " + str(skeleton.last_roll))
-    st.write("Last Action: " + str(skeleton.last_action))
-    st.write("Damage Done: " + str(skeleton.damage_done))
+    st.markdown(f'<u class="skeleton">{skeleton_label}</u> &nbsp;&nbsp;&nbsp;&nbsp;<span class="normal">{skeleton_health}</span>', unsafe_allow_html=True)   
+    st.image(image_path, width=None)
 
     total_attempts = skeleton.num_successes + skeleton.num_fails
     if(total_attempts==0):
@@ -407,6 +398,28 @@ def display_skeleton_stats(skeleton):
     else:
         hit_rate = skeleton.num_successes / total_attempts
         hit_rate = str(round(hit_rate * 100,2))+'%'
+    
+
+    # if(skeleton.last_roll < 10):
+    #     first_row_spaces = "  "
+        
+    st.write(f'Last Roll: {str(skeleton.last_roll)} | Last Action: {str(skeleton.last_action)}')
+    st.write(f'Damage Done: {str(skeleton.damage_done)} | Success Rate: {hit_rate}')
+
+
+def display_skeleton_stats(skeleton):
+    total_attempts = skeleton.num_successes + skeleton.num_fails
+    if(total_attempts==0):
+        hit_rate = 'NA'
+    else:
+        hit_rate = skeleton.num_successes / total_attempts
+        hit_rate = str(round(hit_rate * 100,2))+'%'
+
+    st.write('\n')
+    st.write(f"Health = {str(skeleton.current_health)}/{str(skeleton.max_health)}")
+    st.write("Last Roll: " + str(skeleton.last_roll))
+    st.write("Last Action: " + str(skeleton.last_action))
+    st.write("Damage Done: " + str(skeleton.damage_done))
     st.write("Success Rate: " + hit_rate)
     st.write('\n')
     st.write('\n')
@@ -478,6 +491,17 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+st.markdown(
+    """
+    <style>
+    .normal{
+        font-size:20px !important;
+        color:#FFFFFF !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 if 'undead_hoard' not in st.session_state:
     st.session_state['undead_hoard'] = {}
 
@@ -492,7 +516,7 @@ with col_title:
 
 # Use Streamlit's 'columns' layout to display buttons side by side
 # col1,col2,vertical_line,outputs = st.columns([2.5,2.5,0.1,1.5])
-col1,vertical_line,outputs1,outputs2,outputs3,outputs4 = st.columns([1.5,0.1,0.35,0.5,0.35,0.5])
+col1,vertical_line,outputs1,space1,outputs2,space2,outputs3,space3 = st.columns([1.5,0.1,0.8,0.2,0.8,0.2,0.8,0.2])
 
 if 'undead_hoard' in st.session_state:
     undead_hoard = st.session_state['undead_hoard']
@@ -560,20 +584,17 @@ if 'Skeleton' in undead_hoard:
     skeletons = skeleton_army.get_skeletons()
 
     with outputs1:
-        even_skeletons = skeletons[0::2]
-        for skeleton in even_skeletons:
+        group_1 = skeletons[0::3]
+        for skeleton in group_1:
             display_skeleton_image(skeleton,images)
     
     with outputs2: 
-        for skeleton in even_skeletons:
-            display_skeleton_stats(skeleton)
+        group_2 = skeletons[1::3]
+        for skeleton in group_2:
+            display_skeleton_image(skeleton,images)
 
 
     with outputs3:
-        odd_skeletons = skeletons[1::2]
-        for skeleton in odd_skeletons:
+        group_3 = skeletons[2::3]
+        for skeleton in group_3:
             display_skeleton_image(skeleton,images)
-
-    with outputs4: 
-        for skeleton in odd_skeletons:
-            display_skeleton_stats(skeleton)
