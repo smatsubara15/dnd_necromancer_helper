@@ -612,5 +612,5 @@ if 'Skeleton' in undead_hoard:
 with download:
     # Serialize the object
     buffer = io.BytesIO()
-    pickle.dump(army, buffer)
+    pickle.dump(undead_hoard, buffer)
     buffer.seek(0)
