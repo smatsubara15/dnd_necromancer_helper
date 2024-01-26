@@ -287,6 +287,10 @@ healthy_skelly_image_path = '/Users/scottsmacbook/dnd_necromancer_helper/photos/
 damaged_skelly_image_path = '/Users/scottsmacbook/dnd_necromancer_helper/photos/Damaged Skeleton.png'
 almost_dead_skelly_image_path = '/Users/scottsmacbook/dnd_necromancer_helper/photos/Nearly Defeated Skeleton.png'
 
+# healthy_skelly_image_path = 'photos/Health Skeleton.png'
+# damaged_skelly_image_path = 'photos/Damaged Skeleton.png'
+# almost_dead_skelly_image_path = 'photos/Nearly Defeated Skeleton.png'
+
 images = []
 images.append(healthy_skelly_image_path)
 images.append(damaged_skelly_image_path)
