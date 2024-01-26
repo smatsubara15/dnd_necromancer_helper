@@ -1,1 +1,1 @@
-Trello Board: https://trello.com/b/k9sJgBG4/necromancer-helper
+Site: https://huggingface.co/spaces/smatsubara/necromancer_helper
