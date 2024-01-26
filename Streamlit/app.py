@@ -216,7 +216,7 @@ if 'undead_hoard' not in st.session_state:
 
 # Create a space column on the left, then the title, and then the image on the right
 col_image, col_title,space, download,upload = st.columns([1,0.5,3,1,2])
-title_image_path = '/Users/scottsmacbook/dnd_necromancer_helper/photos/necromancy_symbol.png'  # Replace with the actual path
+title_image_path = '/Users/scottsmacbook/dnd_necromancer_helper/photos/Sally.jpeg'  # Replace with the actual path
 
 with col_image:
     st.image(title_image_path)
